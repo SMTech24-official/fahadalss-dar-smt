@@ -7,97 +7,201 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id              String     @id @default(auto()) @map("_id") @db.ObjectId
-  name            String
-  email           String     @unique
-  password        String
-  role            UserRole
-  status          UserStatus @default(ACTIVE)
-  phone           String?
-  isEmailVerified Boolean    @default(false)
-  isDeleted       Boolean    @default(false)
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
-  otp             String?
-  otpExpiry       DateTime?
-
-  @@map("users")
-}
-model Client {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  name      String
-  email     String   @unique
-  phone     String?
-  status    UserStatus @default(ACTIVE)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("clients")
-}   
-
-// model KYCRequest {
-//   id         String    @id @default(auto()) @map("_id") @db.ObjectId
-//   investorId String    @db.ObjectId
-//   status     KycStatus @default(PENDING)
-//   document   String
-//   reason     String?
-//   createdAt  DateTime  @default(now())
-//   updatedAt  DateTime  @updatedAt
-
-//   investor Investor @relation(fields: [investorId], references: [id])
-
-//   @@map("kyc_requests")
-// }
-
-enum UserRole {
+enum Role {
   ADMIN
-  INVESTOR
-  COMPANY
+  CHIEF_ENGINEER
+  PROJECT_MANAGER
+  ARCHITECTURAL_DESIGNER
+  STRUCTURAL_DESIGNER
+  FACADE_DESIGNER
+  INTERIOR_DESIGNER
+  LIGHTING_DESIGNER
+  AIR_CONDITIONING_ENGINEER
+  VENTILATION_ENGINEER
+  PLUMBING_ENGINEER
+  ELECTRICAL_ENGINEER
+  BILLING_OFFICER
+  CLIENT
+  SHORING_CONTRACTOR
+  SHELL_CONTRACTOR
+  AIR_CONDITIONING_CONTRACTOR
+  PLUMBING_CONTRACTOR
+  VENTILATION_CONTRACTOR
+  ELECTRICAL_CONTRACTOR
+  INSULATION_CONTRACTOR
 }
 
-enum CampaignType {
-  EQUITY
-  BOND
-  CONVERTIBLE
-}
-
-enum CampaignStatus {
-  DRAFT
-  PENDING_APPROVAL
-  LIVE
-  COMPLETED
-  REJECTED
-}
-
-enum PaymentStatus {
-  PENDING
-  PAID
-  FAILED
-  REFUNDED
-}
-
-enum KycStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
-enum DocumentType {
-  DECK
-  CONTRACT
-  TERMS
-  OTHER
-}
-
-enum UserStatus {
+enum Status {
   ACTIVE
-  INACTIVE
-  SUPENDED
+  BLOCKED
 }
 
-enum VerificationStatus {
+enum ApprovalStatus {
   PENDING
   APPROVED
   REJECTED
 }
+
+model User {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  email           String   @unique
+  password        String
+  phone           String?
+  role            Role
+  status          Status   @default(ACTIVE)
+  isEmailVerified Boolean  @default(false)
+  isDeleted       Boolean  @default(false)
+  address         String?
+  otp             String?
+  otpExpired      DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  projects        Project[] @relation("ClientProjects")
+}
+
+model Project {
+  id                            String   @id @default(auto()) @map("_id") @db.ObjectId
+  name                          String
+  clientId                      String   @db.ObjectId
+  client                        User     @relation("ClientProjects", fields: [clientId], references: [id])
+  projectManagers         ProjectMember[] @relation("ProjectManagers")
+  architecturalDesigners  ProjectMember[] @relation("ArchitecturalDesigners")
+  facadeDesignerId              String?  @db.ObjectId
+  facadeDesigner                User?    @relation("FacadeDesigner", fields: [facadeDesignerId], references: [id])
+  architecturalDesigns          DesignDocument[] @relation("architecturalDesigns")
+  structuralDesigns             DesignDocument[]@relation("structuralDesigns")
+  soilTest                      DesignSubmission?@relation("soilTest")
+  facadeDesigns                 DesignDocument[]@relation("facadeDesigns")
+  interiorDesign                DesignSubmission?@relation("interiorDesign")
+  lightingDesign                DesignSubmission?@relation("lightingDesign")
+  airConditioning               DesignSubmission?@relation("airConditioning")
+  ventilation                   DesignSubmission?@relation("ventilation")
+  plumbing                      DesignSubmission?@relation("plumbing")
+  electrical                    electricalDesign?@relation("electrical")
+  billing                       DesignSubmission?@relation("facadeDesigns")
+  govtApproval                  Boolean      @default(false)
+  preliminaryCost               Float?
+  estimateCost                  Float?
+  designPhaseProjectManagerApproval Boolean @default(false)
+  pricingPhase                  String?
+  pricingStatus                 ApprovalStatus? @default(PENDING)
+  pricingNote                   String?
+  pricing                       Float?
+  startDate                     DateTime?
+  estimateLastDate              DateTime?
+  contractorList                ContractorAssignment[]
+  meetings                      Meeting[]
+  checklist                     Checklist?
+  insuranceDocuments            InsuranceDocument[]
+  applyForResidentialVillas     Boolean @default(false)
+  installDarSign                Boolean @default(false)
+  photos                        String[]
+  videos                        String[]
+  implementationPhaseProjectManagerApproval Boolean @default(false)
+  handoverProject               Boolean @default(false)
+  createdAt                     DateTime @default(now())
+  updatedAt                     DateTime @updatedAt
+}
+
+
+
+
+model Meeting {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  title        String
+  projectId    String   @db.ObjectId
+  project      Project  @relation(fields: [projectId], references: [id])
+  date         DateTime
+  time         DateTime
+  comments     String?
+  meetLink     String?
+  meetingCount Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Bidding {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  projectId       String   @db.ObjectId
+  project         Project  @relation(fields: [projectId], references: [id])
+  bids            BidDetail[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model BidDetail {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  biddingId    String   @db.ObjectId
+  bidding      Bidding  @relation(fields: [biddingId], references: [id])
+  contractorId String   @db.ObjectId
+  contractor   User     @relation(fields: [contractorId], references: [id])
+  bidDocument  String
+  bidType      String
+  lastDate     DateTime
+}
+
+model DesignDocument {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  projectId   String?  @db.ObjectId
+  project     Project? @relation(fields: [projectId], references: [id])
+  title       String
+  fileUrl     String
+  lastDate    DateTime
+  planNote    String?
+  feedback    String?
+  status      Boolean  @default(false)
+  approval    Boolean  @default(false)
+}
+
+model DesignSubmission {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  fileUrl     String
+  status      Boolean  @default(false)
+  approval    Boolean  @default(false)
+  submittedAt DateTime @default(now())
+}
+
+
+model ProjectMember {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  projectId  String   @db.ObjectId
+  project    Project  @relation(fields: [projectId], references: [id])
+  userId     String   @db.ObjectId
+  user       User     @relation(fields: [userId], references: [id])
+  role       Role
+}
+
+model ContractorAssignment {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  projectId        String   @db.ObjectId
+  project          Project  @relation(fields: [projectId], references: [id])
+  contractorId     String   @db.ObjectId
+  contractor       User     @relation(fields: [contractorId], references: [id])
+  bidDocument      String
+  signingDate      DateTime?
+  meetingDate      DateTime?
+  contractSignDate DateTime?
+}
+
+model Checklist {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  projectId        String?  @db.ObjectId
+  project          Project? @relation(fields: [projectId], references: [id])
+  technicalSpecs   String?
+  qualityStandards String?
+  schedule         String?
+  coordination     String?
+}
+
+model InsuranceDocument {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  projectId  String   @db.ObjectId
+  project    Project  @relation(fields: [projectId], references: [id])
+  title      String
+  fileUrl    String
+  uploadedAt DateTime @default(now())
+}
+
+
